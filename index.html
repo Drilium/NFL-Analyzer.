@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Game Script | NFL analyzer prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500&family=Barlow+Condensed:wght@600&display=swap">
+<style>
+:root{
+--bg:#F4F6F8;--surface:#FFFFFF;--sunken:#E8EDF3;--ink:#101828;--ink2:#4A5568;--line:#D5DBE3;--mute:#9AA6B8;
+--blue:#1F5FD1;--blue-bg:#E1EBFB;--yellow:#F2C200;--yellow-bg:#FFF4C2;--yellow-ink:#6B5300;
+--green:#1E7D50;--green-bg:#DDF3E8;--red:#C8352B;--red-bg:#FBE4E1;
+--disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+--body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+:root:not([data-theme="light"]){--bg:#0E1420;--surface:#161E2E;--sunken:#1E293C;--ink:#EDF1F7;--ink2:#A3AEC2;--line:#2A3650;--mute:#55627C;--blue:#6C9BFF;--blue-bg:#1B2A4D;--yellow:#F2C200;--yellow-bg:#3A3200;--yellow-ink:#F5D451;--green:#4CC48C;--green-bg:#123527;--red:#FF7A6E;--red-bg:#3D1A17;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#0E1420;--surface:#161E2E;--sunken:#1E293C;--ink:#EDF1F7;--ink2:#A3AEC2;--line:#2A3650;--mute:#55627C;--blue:#6C9BFF;--blue-bg:#1B2A4D;--yellow:#F2C200;--yellow-bg:#3A3200;--yellow-ink:#F5D451;--green:#4CC48C;--green-bg:#123527;--red:#FF7A6E;--red-bg:#3D1A17;color-scheme:dark}
+html{scroll-padding-top:calc(64px + env(safe-area-inset-top,0px))}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+a{color:var(--blue)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+h1,h2,h3,h4{margin:0;font-family:var(--disp);font-weight:600;line-height:1.1}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
+.brand{font:600 26px/1 var(--disp);color:var(--ink);text-decoration:none}
+.nav{display:flex;gap:2px;flex:1;flex-wrap:wrap}
+.nav a{padding:6px 12px;color:var(--ink2);text-decoration:none;border-radius:6px;font-weight:500}
+.nav a[aria-current="page"]{color:var(--ink);background:var(--sunken)}
+.tbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body);padding:6px 12px;border-radius:6px;cursor:pointer}
+main{max-width:1040px;margin:0 auto;padding:16px 16px 56px}
+h2{font-size:26px;margin:34px 0 12px}
+h3{font-size:19px}
+.sm{font-size:14px;color:var(--ink2);margin:6px 0 0}
+.note{background:var(--yellow-bg);color:var(--yellow-ink);border-left:4px solid var(--yellow);padding:8px 12px;font-size:14px;margin:0 0 8px}
+.gap{background:var(--sunken);color:var(--ink2);border-left:4px solid var(--mute);padding:10px 14px;font-size:14px;margin:8px 0 0}
+.gap b{color:var(--ink)}
+.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:16px 0}
+.tm{font:600 clamp(34px,8vw,58px)/1 var(--disp)}
+.r{text-align:right}
+.mid{text-align:center;color:var(--ink2);font-size:14px}
+.lines{grid-column:1/-1;display:flex;gap:16px 36px;margin:0;flex-wrap:wrap;border-top:2px solid var(--ink);padding-top:14px}
+.lines dt{font-size:13px;color:var(--ink2)}
+.lines dd{margin:0;font:600 26px/1.1 var(--disp)}
+.gamepick{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:16px 0 0}
+.flag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:13px;font-weight:500}
+.flag.final{background:var(--sunken);color:var(--ink2)}
+.flag.live{background:var(--green-bg);color:var(--green)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px 28px}
+.blk{border-top:2px solid var(--ink);padding-top:10px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15px}
+th{text-align:left;font-weight:500;color:var(--ink2);font-size:13px;padding:8px 10px;border-bottom:1px solid var(--ink);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.num{text-align:right}
+tr[data-sel]{cursor:pointer}
+tr[data-sel]:hover td{background:var(--sunken)}
+tr.on td{background:var(--blue-bg)}
+.lnk{background:none;border:0;padding:0;font:500 15px var(--body);color:var(--ink);cursor:pointer;text-align:left}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);flex-wrap:wrap}
+.seg button{border:0;background:none;padding:7px 14px;font:500 14px var(--body);color:var(--ink2);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.panel{border:1px solid var(--line);background:var(--surface);padding:14px;margin-top:16px}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:12px 0 0}
+.stats div{background:var(--surface);padding:10px 12px}
+.stats dt{font-size:13px;color:var(--ink2)}
+.stats dd{margin:0;font:600 30px/1.1 var(--disp)}
+.btn{display:inline-block;padding:7px 14px;border:1px solid var(--ink);color:var(--ink);text-decoration:none;font:500 15px var(--body);border-radius:6px;background:none;cursor:pointer}
+.btn:hover{background:var(--sunken)}
+.ph{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 24px;flex-wrap:wrap;padding:16px 0;border-bottom:2px solid var(--ink)}
+.ph h1{font-size:clamp(38px,9vw,60px)}
+.ps{text-align:right}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--ink2);font-size:12px;font-family:var(--body)}
+.chart .val{fill:var(--ink);font-weight:500}
+.chart .col{fill:var(--blue)}
+.chart .axis{stroke:var(--ink);stroke-width:1}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.in{width:100%;max-width:380px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;margin:0 0 12px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.filters select{padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}
+.pick{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 16px}
+.pick label{display:grid;gap:4px;font-size:14px;color:var(--ink2);flex:1;min-width:220px}
+.pick .in{margin:0;max-width:none}
+.cr{margin:0 0 16px}
+.cr h4{font-size:18px;margin:0 0 4px}
+.br2{display:grid;grid-template-columns:120px 1fr 64px;gap:10px;align-items:center;font-size:14px}
+.br2 .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.trk{height:8px;background:var(--sunken);border-radius:4px;overflow:hidden;margin:3px 0}
+.trk b{display:block;height:100%}
+.sr{position:absolute;left:-9999px}
+.count{font-size:13px;color:var(--ink2);margin:0 0 8px}
+@media (max-width:520px){.br2{grid-template-columns:88px 1fr 56px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/game">Game Script</a>
+  <nav class="nav" aria-label="Main">
+    <a href="#/game" data-nav="game">Game day</a>
+    <a href="#/players" data-nav="players">Players</a>
+    <a href="#/compare" data-nav="compare">Compare</a>
+  </nav>
+  <button type="button" class="tbtn" id="theme" aria-pressed="false">Dark mode</button>
+</header>
+<main id="app" tabindex="-1"><p class="sm">Loading player and game data...</p></main>
+
+<script>
+(function(){
+'use strict';
+
+var PLAYERS, GAMES, SEASON, GENERATED, BY, BY_TEAM, DEF_ALLOWED, HIST_SEASONS;
+
+fetch('nfl_data.json', {cache:'no-store'})
+  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(function(DATA){
+    PLAYERS = DATA.players; GAMES = DATA.games; SEASON = DATA.season; GENERATED = DATA.generated;
+    DEF_ALLOWED = DATA.defense_allowed || {};
+    HIST_SEASONS = DATA.hist_seasons || [];
+    BY = {}; PLAYERS.forEach(function(p){BY[p.id]=p});
+    BY_TEAM = {}; PLAYERS.forEach(function(p){(BY_TEAM[p.t]=BY_TEAM[p.t]||[]).push(p)});
+    init();
+  })
+  .catch(function(err){
+    document.getElementById('app').innerHTML =
+      '<p class="note">Could not load nfl_data.json ('+err.message+'). '+
+      'If you just opened this file locally, note that it now needs to be served over HTTP '+
+      '(e.g. by Netlify, or by running a local server) \u2014 browsers block fetching local JSON '+
+      'files directly from a file:// page. nfl_data.json must sit in the same folder as this HTML file.</p>';
+  });
+var TEAM_NAME = {ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LA:'Rams',LAC:'Chargers',LV:'Raiders',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SEA:'Seahawks',SF:'49ers',TB:'Buccaneers',TEN:'Titans',WAS:'Commanders'};
+var POS_ORDER=['QB','RB','WR','TE','DL','LB','DB','K','P','LS','OL'];
+var CHART_LABEL={QB:'Passing yards by game',RB:'Rushing yards by game',WR:'Receiving yards by game',TE:'Receiving yards by game'};
+var STAT_LABELS={
+ att:'Attempts/g',cmp:'Completions/g',pyd:'Passing yds/g',ptd:'Passing TDs/g',int:'INTs/g',pepa:'Pass EPA (total)',ryd:'Rushing yds/g',car:'Carries/g',
+ rtd:'Rushing TDs/g',tgt:'Targets/g',rec:'Receptions/g',recyd:'Receiving yds/g',rectd:'Receiving TDs/g',tshr:'Target share',
+ tkl:'Tackles/g',sacks:'Sacks',pd:'Passes defended',fp:'Fantasy pts/g (PPR)'
+};
+var STAT_PCT={tshr:1};
+var POS_STAT_ORDER={
+ QB:['att','cmp','pyd','ptd','int','ryd','fp'],
+ RB:['car','ryd','rtd','tgt','rec','recyd','fp'],
+ WR:['tgt','rec','recyd','rectd','tshr','fp'],
+ TE:['tgt','rec','recyd','rectd','tshr','fp'],
+ DB:['tkl','int','pd','fp'],LB:['tkl','sacks','pd','fp'],DL:['tkl','sacks','fp']
+};
+
+var W='season', GAME_ID=null, GT=null, GS=null, CMP_A=null, CMP_B=null, VS_TEAM=null, VS_PLAYER=null;
+var app=document.getElementById('app');
+var NOTE='<p class="note">Real 2026 NFL data (rosters, weekly stats, snap counts, closing lines) from nflverse, refreshed '+GENERATED+'. Scheme/personnel charting, live injury news, and prop lines are not connected yet \u2014 see the notes on each page.</p>';
+
+function fmtStat(k,v){
+  if(v===null||v===undefined)return '\u2014';
+  if(STAT_PCT[k])return Math.round(v*100)+'%';
+  return (Math.round(v*10)/10).toString();
+}
+function usageLabel(p){
+  if(!p.ss)return null;
+  if(p.p==='QB')return (p.ss.att||0)+' att/g';
+  if(p.p==='RB')return (p.ss.car||0)+' car/g';
+  if(p.p==='WR'||p.p==='TE')return Math.round((p.ss.tshr||0)*100)+'% tgt share';
+  if(p.p==='DB'||p.p==='LB'||p.p==='DL')return (p.ss.tkl||0)+' tkl/g';
+  return null;
+}
+function roleRank(p){ // order within a team's roster table
+  var order=POS_ORDER.indexOf(p.p); if(order<0)order=99;
+  var usage = p.ss ? (p.ss.tshr!==undefined?p.ss.tshr:(p.ss.car||p.ss.att||p.ss.tkl||0)) : -1;
+  return [order, -usage];
+}
+function teamRoster(t){
+  return (BY_TEAM[t]||[]).filter(function(p){return p.g>0}).sort(function(a,b){
+    var ra=roleRank(a), rb=roleRank(b);
+    return ra[0]-rb[0] || ra[1]-rb[1];
+  });
+}
+function gameLabel(g){
+  var when = g.hs!==null? 'Final '+g.as+'-'+g.hs : g.date;
+  return TEAM_NAME[g.away]+' at '+TEAM_NAME[g.home]+' \u2014 Wk '+g.wk+' ('+when+')';
+}
+function seg(cur,attr){
+  return '<div class="seg" role="group" aria-label="Time window"><button type="button" data-'+attr+'="season" aria-pressed="'+(cur==='season')+'">Season</button><button type="button" data-'+attr+'="last" aria-pressed="'+(cur==='last')+'">Most recent game</button></div>';
+}
+function lastGame(p){return p.wk&&p.wk.length?p.wk[p.wk.length-1]:null}
+function metricsFor(p,w){
+  var keys=POS_STAT_ORDER[p.p]||['fp'];
+  if(w==='last'){
+    var lg=lastGame(p);
+    if(!lg)return '<p class="sm">No game logged yet.</p>';
+    var map={pyd:'passing_yards',ryd:'rushing_yards',recyd:'receiving_yards',tkl:'tkl'};
+    var main = lg.v;
+    return '<dl class="stats"><div><dt>Week '+lg.w+' vs '+lg.opp+'</dt><dd>'+main+'</dd></div></dl><p class="sm">Single-game line for this position\u2019s headline stat. Full per-game splits (targets, catches, etc.) are in the weekly array powering the chart below.</p>';
+  }
+  if(!p.ss)return '<p class="sm">No games logged yet this season.</p>';
+  return '<dl class="stats">'+keys.map(function(k){return '<div><dt>'+STAT_LABELS[k]+'</dt><dd>'+fmtStat(k,p.ss[k])+'</dd></div>'}).join('')+'</dl>';
+}
+function barChart(p){
+  if(!p.wk||!p.wk.length)return '<p class="sm">No games logged yet this season.</p>';
+  var v=p.wk,mx=Math.max.apply(null,v.map(function(x){return x.v}))*1.15||1;
+  var n=v.length,w=Math.min(64,560/n),gap=(620-40-n*w)/(n+1);
+  var o='<svg class="chart" viewBox="0 0 640 150" role="img" aria-label="'+(CHART_LABEL[p.p]||'Stat by game')+'">';
+  v.forEach(function(x,i){
+    var h=x.v/mx*90, X=40+gap+i*(w+gap);
+    o+='<rect class="col" x="'+X+'" y="'+(112-h)+'" width="'+w+'" height="'+Math.max(h,1)+'" rx="2"/><text class="val" x="'+(X+w/2)+'" y="'+(104-h)+'" text-anchor="middle">'+Math.round(x.v)+'</text><text x="'+(X+w/2)+'" y="132" text-anchor="middle">W'+x.w+'</text>';
+  });
+  return o+'<line class="axis" x1="30" y1="112" x2="620" y2="112"/></svg><p class="sm">Opponent by week: '+v.map(function(x){return 'W'+x.w+' '+x.opp}).join(', ')+'.</p>';
+}
+function playerLink(p){return '<a href="#/player/'+p.id+'">'+p.n+'</a>'}
+function gapNote(what,needs){
+  return '<p class="gap"><b>'+what+':</b> not connected in this prototype. Needs '+needs+'.</p>';
+}
+function nextOpponent(team){
+  var up=GAMES.filter(function(g){return g.hs===null&&(g.away===team||g.home===team)}).sort(function(a,b){return a.date<b.date?-1:1})[0];
+  if(!up)return null;
+  return up.away===team?up.home:up.away;
+}
+function statLabelsRow(keys){return keys.map(function(k){return '<th class="num">'+(STAT_LABELS[k]||k).replace('/g','')+'</th>'}).join('')}
+function statValuesRow(line,keys){return keys.map(function(k){return '<td class="num">'+fmtStat(k,line[k])+'</td>'}).join('')}
+function vsSection(p){
+  var opps=Object.keys(TEAM_NAME).filter(function(t){return t!==p.t}).sort();
+  if(!VS_PLAYER||VS_PLAYER!==p.id){VS_PLAYER=p.id;VS_TEAM=nextOpponent(p.t)||opps[0];}
+  var team=VS_TEAM;
+  var tOpts=opps.map(function(t){return '<option value="'+t+'"'+(t===team?' selected':'')+'>'+TEAM_NAME[t]+'</option>'}).join('');
+  var keys=POS_STAT_ORDER[p.p]?POS_STAT_ORDER[p.p].filter(function(k){return k!=='fp'}):[];
+  var meetings=(p.hist||[]).filter(function(h){return h.opp===team}).sort(function(a,b){return b.s-a.s||b.w-a.w});
+  var h='<div class="gamepick"><label class="sm" for="vsSel">Opponent</label><select id="vsSel" class="in" style="margin:0;max-width:280px">'+tOpts+'</select></div>';
+  h+='<h3 style="margin-top:16px">Past meetings vs. '+TEAM_NAME[team]+'</h3>';
+  if(!meetings.length){
+    h+='<p class="sm">No meetings vs. '+TEAM_NAME[team]+' in '+(HIST_SEASONS.concat([SEASON]).join(', '))+' for this player.</p>';
+  } else {
+    h+='<div class="scroll"><table><thead><tr><th>Season</th><th>Wk</th>'+statLabelsRow(keys)+'</tr></thead><tbody>'+meetings.map(function(m){
+      return '<tr><td>'+m.s+'</td><td>'+m.w+'</td>'+statValuesRow(m,keys)+'</tr>';
+    }).join('')+'</tbody></table></div>';
+  }
+  h+='<h3 style="margin-top:20px">What '+TEAM_NAME[team]+'\u2019s defense allows to '+p.p+'s</h3>';
+  var da=(DEF_ALLOWED[team]||{})[p.p];
+  if(!da){
+    h+='<p class="sm">No games logged yet against this position for '+TEAM_NAME[team]+'.</p>';
+  } else {
+    h+='<p class="sm">Real average per game this defense has allowed to opposing '+p.p+'s, across '+da.g+' games ('+HIST_SEASONS.concat([SEASON]).join(', ')+').</p>';
+    h+='<dl class="stats">'+keys.map(function(k){return '<div><dt>'+STAT_LABELS[k]+'</dt><dd>'+fmtStat(k,da[k])+'</dd></div>'}).join('')+'</dl>';
+  }
+  h+=gapNote('Coverage scheme (man/zone) and which specific cornerback or linebacker is a problem for this player','individual play-charting data (e.g. PFF or Next Gen Stats coverage data), which isn\u2019t available in free public sources \u2014 what\u2019s shown above is the closest real signal available: how this defense performs against the position as a whole');
+  return h;
+}
+
+function viewGame(){
+  var upcoming=GAMES.filter(function(g){return g.hs===null}).sort(function(a,b){return a.date<b.date?-1:1});
+  var recent=GAMES.filter(function(g){return g.hs!==null}).sort(function(a,b){return a.date<b.date?1:-1});
+  var g = GAME_ID?GAMES.filter(function(x){return x.id===GAME_ID})[0]:(upcoming[0]||recent[0]);
+  if(!g)return '<p>No games in the schedule.</p>';
+  GAME_ID=g.id;
+  if(!GT||[g.away,g.home].indexOf(GT)<0)GT=g.away;
+  var roster=teamRoster(GT);
+  if(!GS||!BY[GS]||BY[GS].t!==GT)GS=roster[0]?roster[0].id:null;
+  var pool=upcoming.slice(0,10).concat(recent.slice(0,10));
+  var opts=pool.map(function(x){return '<option value="'+x.id+'"'+(x.id===g.id?' selected':'')+'>'+gameLabel(x)+'</option>'}).join('');
+  var isFinal=g.hs!==null;
+  var h='<div class="gamepick"><label class="sm" for="gsel">Game</label><select id="gsel" class="in" style="margin:0;max-width:480px">'+opts+'</select></div>';
+  h+='<section class="board" aria-label="'+TEAM_NAME[g.away]+' vs '+TEAM_NAME[g.home]+'"><div class="tm">'+g.away+'</div><div class="mid">Week '+g.wk+' \u00b7 '+g.date+(isFinal?'<br><span class="flag final">Final</span>':'')+'</div><div class="tm r">'+g.home+'</div><dl class="lines">'+
+    (isFinal?'<div><dt>Score</dt><dd>'+g.as+' \u2013 '+g.hs+'</dd></div>':'')+
+    (g.spread!==null?'<div><dt>Closing spread</dt><dd>'+g.home+' '+(g.spread>0?'-':'+')+Math.abs(g.spread)+'</dd></div>':'')+
+    (g.total!==null?'<div><dt>Closing total</dt><dd>'+g.total+'</dd></div>':'')+
+    (g.aml!==null?'<div><dt>Moneyline</dt><dd>'+g.away+' '+(g.aml>0?'+':'')+g.aml+' / '+g.home+' '+(g.hml>0?'+':'')+g.hml+'</dd></div>':'')+
+  '</dl></section>';
+  h+=gapNote('Pre-game injury news and status flags','a live injury-report or news feed');
+  h+='<h2>Game script: crowd vs. data</h2>'+gapNote('Social sentiment on expected game script','a social-listening or sentiment API');
+  h+='<p class="sm">What real data can already show: how a team\u2019s usage actually shifted in games a key player missed this season, once a few more weeks are logged. Right now (week '+Math.max.apply(null,GAMES.map(function(x){return x.hs!==null?x.wk:0}))+' complete) the sample per player is too small to show reliably \u2014 this will fill in as the season goes.</p>';
+  h+='<h2>Team usage</h2><div class="seg" role="group" aria-label="Team">'+[g.away,g.home].map(function(t){return '<button type="button" data-team="'+t+'" aria-pressed="'+(t===GT)+'">'+TEAM_NAME[t]+'</button>'}).join('')+'</div>';
+  h+='<p class="count">'+roster.length+' players with a game logged this season.</p>';
+  h+='<div class="scroll"><table><thead><tr><th>Player</th><th>Pos</th><th class="num">Snap %</th><th>Usage</th><th class="num">Fantasy pts/g</th></tr></thead><tbody>'+roster.map(function(p){
+    return '<tr data-sel="'+p.id+'"'+(p.id===GS?' class="on"':'')+'><td><button type="button" class="lnk">'+p.n+'</button></td><td>'+p.p+'</td><td class="num">'+(p.sn!==null?p.sn+'%':'\u2014')+'</td><td>'+(usageLabel(p)||'\u2014')+'</td><td class="num">'+(p.ss?p.ss.fp:'\u2014')+'</td></tr>';
+  }).join('')+'</tbody></table></div>';
+  var sel=GS?BY[GS]:null;
+  if(sel){
+    h+='<div class="panel"><div class="hd"><div><h3>'+sel.n+'</h3><p class="sm" style="margin:0">'+sel.p+', '+TEAM_NAME[sel.t]+(sel.j?' \u00b7 #'+sel.j:'')+'</p></div><a class="btn" href="#/player/'+sel.id+'">Open full page</a></div><div style="margin-top:12px">'+seg(W,'win')+'</div><div style="margin-top:10px">'+metricsFor(sel,W)+'</div></div>';
+  }
+  h+=gapNote('Prop lines and line-movement timeline','a sportsbook odds API with historical line snapshots');
+  return h;
+}
+
+function viewPlayers(){
+  var teams=Object.keys(TEAM_NAME).sort();
+  var positions=POS_ORDER;
+  var tOpts='<option value="">All teams</option>'+teams.map(function(t){return '<option value="'+t+'">'+TEAM_NAME[t]+'</option>'}).join('');
+  var pOpts='<option value="">All positions</option>'+positions.map(function(p){return '<option value="'+p+'">'+p+'</option>'}).join('');
+  var rows=PLAYERS.slice().sort(function(a,b){return (b.ss?b.ss.fp:-1)-(a.ss?a.ss.fp:-1)}).map(function(p){
+    return '<tr data-t="'+p.t+'" data-p="'+p.p+'" data-s="'+(p.n+' '+p.p+' '+TEAM_NAME[p.t]).toLowerCase()+'"><td>'+playerLink(p)+'</td><td>'+p.p+'</td><td>'+TEAM_NAME[p.t]+'</td><td class="num">'+p.g+'</td><td class="num">'+(p.sn!==null?p.sn+'%':'\u2014')+'</td><td class="num">'+(p.ss?p.ss.fp:'\u2014')+'</td></tr>';
+  }).join('');
+  return '<h2 style="margin-top:20px">Players</h2><p class="sm" style="margin:0 0 12px">'+PLAYERS.length+' players on active rosters, '+SEASON+' season.</p>'+
+    '<label class="sr" for="q">Search players</label><input id="q" class="in" type="search" placeholder="Search by name, position, or team" autocomplete="off">'+
+    '<div class="filters"><select id="ft" aria-label="Filter by team">'+tOpts+'</select><select id="fp" aria-label="Filter by position">'+pOpts+'</select></div>'+
+    '<div class="scroll"><table><thead><tr><th>Player</th><th>Pos</th><th>Team</th><th class="num">Games</th><th class="num">Snap %</th><th class="num">Fantasy pts/g</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+function matchupSummary(p){
+  if(!p.wk||!p.wk.length)return '';
+  var best=p.wk.slice().sort(function(a,b){return b.v-a.v})[0];
+  var worst=p.wk.slice().sort(function(a,b){return a.v-b.v})[0];
+  return '<p class="sm">Best game so far: Week '+best.w+' vs '+best.opp+' ('+best.v+'). Toughest: Week '+worst.w+' vs '+worst.opp+' ('+worst.v+').</p>';
+}
+function viewPlayer(p){
+  var h='<header class="ph"><div><h1>'+p.n+'</h1><p class="sm" style="margin:4px 0 0">'+p.p+', '+TEAM_NAME[p.t]+(p.j?' \u00b7 #'+p.j:'')+(p.col?' \u00b7 '+p.col:'')+(p.x!==undefined?' \u00b7 Year '+(p.x+1):'')+'</p></div><div class="ps"><p class="sm" style="margin:0">'+p.g+' game'+(p.g===1?'':'s')+' logged this season</p></div></header>';
+  h+=gapNote('Live injury status and news confidence','a connected injury-report/news feed');
+  h+='<h2>Overview</h2>'+seg(W,'win')+'<div style="margin-top:10px">'+metricsFor(p,W)+'</div>';
+  if(p.wk&&p.wk.length){
+    h+='<h2>'+(CHART_LABEL[p.p]||'Stat by game')+'</h2>'+barChart(p)+matchupSummary(p);
+  }
+  h+='<h2>Role, alignment and personnel groupings</h2>'+gapNote('Slot/wide alignment and personnel-package splits','a play-charting source (e.g. PFF) \u2014 not in free public data');
+  if(p.p==='QB'||p.p==='RB'||p.p==='WR'||p.p==='TE'){
+    h+='<h2>Matchup history</h2>'+vsSection(p);
+  } else {
+    h+='<h2>Matchup history</h2>'+gapNote('Opponent matchup breakdowns for this position','box-score data for defensive positions is sparse for this \u2014 offensive skill positions have it above');
+  }
+  if(p.p!=='QB'&&p.p!=='K'&&p.p!=='P'){
+    h+='<h2>Who benefits when he is out</h2><p class="sm">Needs enough games with and without him logged this season to compare teammates\u2019 usage reliably \u2014 with '+SEASON+' at week '+Math.max.apply(null,GAMES.map(function(x){return x.hs!==null?x.wk:0}))+', that sample isn\u2019t there yet for most players.</p>';
+  }
+  h+='<h2>Prop lines</h2>'+gapNote('Player prop lines and movement','a sportsbook odds API');
+  var others=PLAYERS.filter(function(q){return q.id!==p.id&&q.p===p.p}).slice(0,1);
+  if(others.length)h+='<p style="margin-top:28px"><a class="btn" href="#/compare/'+p.id+'/'+others[0].id+'">Compare with '+others[0].n+'</a></p>';
+  return h;
+}
+
+function cmpRow(k,A,B){
+  var a=A.ss?A.ss[k]:null, b=B.ss?B.ss[k]:null;
+  var mx=Math.max(Math.abs(a||0),Math.abs(b||0),0.0001);
+  return '<div class="cr"><h4>'+STAT_LABELS[k]+'</h4>'+
+    '<div class="br2"><span>'+A.n+'</span><div class="trk"><b style="width:'+(Math.max(a||0,0)/mx*100)+'%;background:var(--blue)"></b></div><span class="v">'+fmtStat(k,a)+'</span></div>'+
+    '<div class="br2"><span>'+B.n+'</span><div class="trk"><b style="width:'+(Math.max(b||0,0)/mx*100)+'%;background:var(--mute)"></b></div><span class="v">'+fmtStat(k,b)+'</span></div></div>';
+}
+function viewCompare(a,b){
+  var A=BY[a]||PLAYERS[0], B=BY[b]||PLAYERS[1];
+  var opts=function(id){return PLAYERS.map(function(p){return '<option value="'+p.id+'"'+(p.id===id?' selected':'')+'>'+p.n+' ('+p.p+', '+TEAM_NAME[p.t]+')</option>'}).join('')};
+  var same=A.p===B.p;
+  var keys = same ? (POS_STAT_ORDER[A.p]||['fp']) : ['fp'];
+  var body = (A.g===0||B.g===0)?'<p class="sm">One of these players has no games logged yet this season.</p>':keys.map(function(k){return cmpRow(k,A,B)}).join('');
+  return '<h2 style="margin-top:20px">Compare players</h2><div class="pick"><label>Player A<select id="cA" class="in">'+opts(A.id)+'</select></label><label>Player B<select id="cB" class="in">'+opts(B.id)+'</select></label></div>'+seg(W,'win')+(same?'':'<p class="sm">Different positions, so only fantasy points/game is compared directly.</p>')+'<div style="margin-top:20px">'+body+'</div>';
+}
+
+function render(keep){
+  var r=location.hash.replace(/^#\/?/,'').split('/'),v=r[0]||'game',html,t,nav=v;
+  if(v==='player'&&BY[r[1]]){html=viewPlayer(BY[r[1]]);t=BY[r[1]].n;nav='players'}
+  else if(v==='players'){html=viewPlayers();t='Players'}
+  else if(v==='compare'){if(r[1])CMP_A=r[1];if(r[2])CMP_B=r[2];html=viewCompare(CMP_A,CMP_B);t='Compare'}
+  else{v=nav='game';if(r[1])GAME_ID=r[1];html=viewGame();t='Game day'}
+  app.innerHTML=NOTE+html;
+  document.title=t+' | Game Script';
+  Array.prototype.forEach.call(document.querySelectorAll('.nav a'),function(a){
+    if(a.dataset.nav===nav)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
+  });
+  if(!keep)window.scrollTo(0,0);
+}
+function refocus(k,v){
+  var el=app.querySelector('[data-'+k+'="'+v+'"]');
+  if(el&&el.tagName==='TR')el=el.querySelector('button');
+  if(el)el.focus({preventScroll:true});
+}
+
+document.addEventListener('click',function(e){
+  var t=e.target.closest('[data-win],[data-team],[data-sel]');
+  if(!t)return;
+  if(t.dataset.win){W=t.dataset.win;render(true);refocus('win',W)}
+  else if(t.dataset.team){GT=t.dataset.team;var r=teamRoster(GT);GS=r[0]?r[0].id:null;render(true);refocus('team',GT)}
+  else if(t.dataset.sel){GS=t.dataset.sel;render(true);refocus('sel',GS)}
+});
+document.addEventListener('input',function(e){
+  if(e.target.id!=='q')return;
+  var v=e.target.value.toLowerCase();
+  Array.prototype.forEach.call(app.querySelectorAll('tbody tr[data-s]'),function(r){
+    var okS=r.dataset.s.indexOf(v)>=0;
+    r.hidden=!okS||r.dataset._ft===false;
+  });
+  applyFilters();
+});
+function applyFilters(){
+  var ft=document.getElementById('ft'), fp=document.getElementById('fp'), q=document.getElementById('q');
+  if(!ft)return;
+  var tv=ft.value, pv=fp.value, qv=(q.value||'').toLowerCase();
+  Array.prototype.forEach.call(app.querySelectorAll('tbody tr[data-s]'),function(r){
+    var okT=!tv||r.dataset.t===tv, okP=!pv||r.dataset.p===pv, okQ=!qv||r.dataset.s.indexOf(qv)>=0;
+    r.hidden=!(okT&&okP&&okQ);
+  });
+}
+document.addEventListener('change',function(e){
+  if(e.target.id==='cA'||e.target.id==='cB'){CMP_A=document.getElementById('cA').value;CMP_B=document.getElementById('cB').value;location.hash='#/compare/'+CMP_A+'/'+CMP_B;}
+  if(e.target.id==='ft'||e.target.id==='fp')applyFilters();
+  if(e.target.id==='gsel'){GAME_ID=e.target.value;GT=null;GS=null;render(true);}
+  if(e.target.id==='vsSel'){VS_TEAM=e.target.value;render(true);}
+});
+window.addEventListener('hashchange',function(){render(false)});
+
+var tb=document.getElementById('theme');
+function isDark(){var t=document.documentElement.getAttribute('data-theme');return t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches}
+function syncTheme(){var d=isDark();tb.setAttribute('aria-pressed',String(d));tb.textContent=d?'Light mode':'Dark mode'}
+tb.addEventListener('click',function(){document.documentElement.setAttribute('data-theme',isDark()?'light':'dark');syncTheme()});
+syncTheme();
+
+function init(){ render(false); }
+})();
+</script>
+</body>
+</html>
